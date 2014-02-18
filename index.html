@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>Backbone.js WebSta</title>
+  <link rel="icon" type="image/vnd.microsoft.icon" href="./img/favicon.ico">
   <link rel="stylesheet" href="todos.css"/>
 </head>
 
@@ -21,8 +22,7 @@
 			<a id="clear-completed">Clear completed</a>
 			<div id="todo-count"></div>
 		</div>
-		<input id="toggle-all" type="checkbox">
-		<label for="toggle-all">Mark all as complete</label>
+		<div id="toggle-archives">Archives</div>
 		<ul id="todo-list"></ul>
 	</section>
 
@@ -59,7 +59,8 @@
   <!-- Templates -->
 
 	<script type="text/template" id="item-template">
-		<div class="created_at"><%= created_at != null ? niceTime(created_at) : "" %> </div>
+		<div class="created_at"><%= created_at != null ? niceTime(created_at) : "" %></div>
+		<div class="delete_at"><%= delete_at != -1 ? prettyTimeDiff(delete_at)+" remaining" : "" %></div>
 		<div class="view">
 			<input class="toggle" type="checkbox" <%= done ? "checked='checked'" : null %> />
 			<a class="no_decoration" href="<%= url %>" target="_blank">

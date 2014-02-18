@@ -9,8 +9,10 @@ $(function(){
   // Todo Model
   // ----------
 
-  // Our basic **Todo** model has `title`, `order`, and `done` attributes.
+  // Our basic **Todo** model has `title`, `url`, and `done` attributes.
   var Todo = Backbone.Model.extend({
+	// Duration of a model (m seconds)
+	duration: 60*60*24*1000,
 
     // Default attributes for the todo item.
     defaults: function() {
@@ -19,10 +21,10 @@ $(function(){
         done: false,
 		url: null,
 		created_at: new Date().toString() ,
-		deleted_at: parseInt( new Date() /1000 ),
-		state: 1,
+		delete_at: new Date().getTime() + this.duration,
+		archive: false,
 		comment: null,
-        order:  Todos.nextOrder(),
+		page: Todos.getPage(),	// Archiveページング用の属性
       };
     },
 
@@ -31,6 +33,22 @@ $(function(){
       this.save({done: !this.get("done")});
     },
 
+	// 削除日時を過ぎていたら削除。既読ならばArchivesへ。renderする際にskipするか
+	shouldBeSkipped: function() {
+		if (this.get('archive')) return true;
+		var date = new Date().getTime();
+		var delete_at = this.get('delete_at');
+		if (date > delete_at) {
+			if (this.get('done'))
+			{
+				this.save({archive: true, delete_at: -1, done: false});
+				return true;
+			}
+			this.destroy();
+			return true;
+		}
+		return false;
+	},
   });
 
   // Todo Collection
@@ -47,30 +65,29 @@ $(function(){
     localStorage: new Backbone.LocalStorage("todos-backbone"),
 
     // Filter down the list of all todo items that are finished.
-    done: function() {
-      return this.where({done: true});
+    done: function(archive_flg) {
+      return this.where({done: true, archive: archive_flg});
     },
 
     // Filter down the list to only todo items that are still not finished.
-    remaining: function() {
-      return this.without.apply(this, this.done());
+    remaining: function(archive_flg) {
+      return this.where({done: false, archive: archive_flg});
     },
 
-    // We keep the Todos in sequential order, despite being saved by unordered
-    // GUID in the database. This generates the next order number for new items.
-	// -していくので新しいものほど上に来る
-    nextOrder: function() {
-      if (!this.length) return 0;
-      return this.first().get('order') - 1;
+	// TODO 実装途中
+    getPage: function() {
+	  var perPage = 100;
+      if (!this.length) return 1;
+	  var quotient = Math.floor(this.length / perPage);
+      return quotient + 1;
     },
 
     // Todos are sorted by their original insertion order.
-    comparator: 'order'
-
+    // comparator: 'created_at'
   });
-
   // Create our global collection of **Todos**.
   var Todos = new TodoList;
+
 
   // Todo Item View
   // --------------
@@ -92,8 +109,10 @@ $(function(){
       "click a.destroy"			: "clear",
       "keypress .edit"			: "updateOnEnter",
       "blur .edit"					: "close",
-      "hover img.thumbnail"	: "startZoom",
-      "hover"	: "changeColor"
+      "mouseenter img.thumbnail"	: "startZoom",
+      "mouseleave img.thumbnail"	: "endZoom",
+      // "mouseenter"	: "changeBgColor",
+      // "mouseleave"	: "returnBgColor",
     },
 
     // The TodoView listens for changes to its model, re-rendering. Since there's
@@ -194,45 +213,20 @@ $(function(){
 		});
 	},
 
- 	startZoom: function() {
-		zoom_width = "350px";
-		default_widht = "85px";
-		$('img.thumbnail')
-		.on({
-			'mouseenter': function(){
-				$(this).stop().animate({
+ 	startZoom: function(e) {
+		var zoom_width = "350px";
+		$(e.target).stop().animate({
 					'width': zoom_width,//拡大で表示させておくサイズ
 					// 'marginTop':'245px'//トップのマージンをマイナスで指定する事で底辺を起点としています
 				},'fast');
-			},
-			'mouseleave': function () {
-				$(this).stop().animate({
+	},
+ 	endZoom: function(e) {
+		var default_widht = "85px";
+		$(e.target).stop().animate({
 					'width': default_widht,//デフォルトで表示させておくサイズ
 					// 'marginTop':'0px'
 				},'fast');
-			}
-		});
 	},
-
-	changeColor: function() {
-		// var distance = "-7px";
-		// var duration = 100;
-		$(this.el)
-		.on({
-			'mouseenter': function(){
-				$(this).css("background-color", "ghostwhite");
-				// $(this).stop().animate({
-					// 'left': distance,
-				// }, duration);
-			},
-			'mouseleave': function () {
-				$(this).css("background-color", "white");
-				// $(this).stop().animate({
-					// 'left': '0px',
-				// }, duration);
-			}
-		});
-	}
   });
 
   // The Application
@@ -240,6 +234,8 @@ $(function(){
 
   // Our overall **AppView** is the top-level piece of UI.
   var AppView = Backbone.View.extend({
+	// page: 1,	// ページング用変数
+	isArchive: false,	// 現在の表示がアーカイブか。
 
     // Instead of generating a new element, bind to the existing skeleton of
     // the App already present in the HTML.
@@ -252,18 +248,20 @@ $(function(){
     events: {
       "keypress #new-todo":  "createOnEnter",
       "click #clear-completed": "clearCompleted",
-      "click #toggle-all": "toggleAllComplete"
+      "click #toggle-archives": "toggleArchives",
+      "scroll": "scroll",
     },
 
     // At initialization we bind to the relevant events on the `Todos`
     // collection, when items are added or changed. Kick things off by
     // loading any preexisting todos that might be saved in *localStorage*.
     initialize: function() {
+	  // _.bindAll(this, 'scroll');
+	  // $(window).scroll(this.scroll);
 
       this.input = this.$("#new-todo");
-      this.allCheckbox = this.$("#toggle-all")[0];			// inputなので属性にchecked:true or false を持つ
 
-      this.listenTo(Todos, 'reset', this.loadAll);			// page reload時に一度だけ発火
+      this.listenTo(Todos, 'reset', this.loadWebs);	// page reload時に一度だけ発火
       this.listenTo(Todos, 'add', this.addOne);			// collection.create()時に発火
       this.listenTo(Todos, 'change', this.render);		// collectionはmodelが発火したイベントも受け取れる
       this.listenTo(Todos, 'destroy', this.render);		// modelが破棄されたら発火
@@ -280,9 +278,8 @@ $(function(){
     // Re-rendering the App just means refreshing the statistics -- the rest
     // of the app doesn't change.
     render: function() {
-      var done = Todos.done().length;
-      var remaining = Todos.remaining().length;
-	  console.log('remaining = ', remaining);
+      var done = Todos.done(this.isArchive).length;
+      var remaining = Todos.remaining(this.isArchive).length;
 
       if (Todos.length) {
         this.main.show();
@@ -297,21 +294,48 @@ $(function(){
     addOne: function(todo) {
 	  this.trigger('getTitle', todo);
 	  this.trigger('getComment', todo);
+
+	  if (this.isArchive) return;	// アーカイブ表示時はprependしない
       var view = new TodoView({model: todo});
       this.$("#todo-list").prepend(view.render().el);
     },
 
 	// ページ読み込み時のロード
     loadOne: function(todo) {
+	  // Check model's duration
       var view = new TodoView({model: todo});
-      this.$("#todo-list").append(view.render().el);
+      this.$("#todo-list").prepend(view.render().el);
     },
 
     // Add all items in the **Todos** collection at once.
-    loadAll: function() {
-	  console.log('[AppView] loadAll');
-      Todos.each(this.loadOne, this);
+    loadWebs: function() {
+	  console.log('[AppView] loadWebs');
+	  var attributes = {
+		archive: false,
+	  }
+	  var res = Todos.where(attributes);
+	  console.debug('res = ', res);
+	  for(var i=0; i<res.length; i++) {
+		this.flg = res[i].shouldBeSkipped();
+		if (this.flg) continue;
+		this.loadOne(res[i]);
+	  }
 	  this.render();  // kick render()
+    },
+
+    // for Archive loading
+    loadArchives: function() {
+	  console.log('[AppView] loadArchives');
+	  var attributes = {
+		// page: this.page,
+		archive: true,
+	  }
+	  var res = Todos.where(attributes);
+	  // this.page++;
+	  for(var i=0; i<res.length; i++) {
+		this.loadOne(res[i]);
+	  }
+	  this.render();
     },
 
     // If you hit return in the main input field, create new **Todo** model,
@@ -326,14 +350,35 @@ $(function(){
 
     // Clear all done todo items, destroying their models.
     clearCompleted: function() {
-      _.invoke(Todos.done(), 'destroy');
+      _.invoke(Todos.done(this.isArchive), 'destroy');
       return false;
     },
 
-    toggleAllComplete: function () {
-	  console.log('this.allCheckbox.checked = ', this.allCheckbox.checked);
-      var done = this.allCheckbox.checked;			// 不思議。clickして変更された後の属性を取得
-      Todos.each(function (todo) { todo.save({'done': done}); });
+    // Archives表示と通常表示とを切り替える
+    toggleArchives: function (e) {
+		this.$("#todo-list").html('');	//HTMLを一度空にする
+		this.$("#toggle-archives").toggleClass("selected");
+		// this.page = 1;	//page 初期化
+		this.isArchive = !this.isArchive;
+		if (this.isArchive){
+			this.loadArchives();
+		} else {
+			this.loadWebs();
+		}
+    },
+
+    // Scroll event
+    scroll: function(e) {
+		if (!this.isArchive) return;
+		var contentsHeight = $(document).height();
+		var scrollPosition = $(window).height() + $(window).scrollTop();
+		var threshold = 0;
+		if (contentsHeight - scrollPosition < threshold)
+		{
+			console.debug('scrolled to bottom');
+			// this.loadArchives();
+		}
+		
     },
 
 	// modelのurlを元にタイトルを取得する。
@@ -360,7 +405,6 @@ $(function(){
 				// 文字列の切り出し
 				result_str = str.substring(0, str_length);
 				model.save({comment: result_str});
-				console.log(result_str);
 			}
 		});
 	},

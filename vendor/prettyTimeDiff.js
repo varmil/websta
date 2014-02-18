@@ -22,7 +22,7 @@ var niceTime = (function() {
         }
  
         amount = gap / ints[measure];
-        amount = gap > ints.day ? (Math.round(amount * 100) / 100) : Math.round(amount);
+        amount = gap > ints.day ? (Math.floor(amount)) : Math.round(amount);
         amount += ' ' + measure + (amount > 1 ? 's' : '') + ' ago';
  
         return amount;
@@ -72,9 +72,9 @@ var prettyTimeDiff = (function() {
  
         remainder = timeGap % ints[measure];
  
-        if (remainder >= smallest) {
-            amount += ', ' + arguments.callee( +new Date() - remainder*1000 );
-        }
+        // if (remainder >= smallest) {
+            // amount += ' ' + arguments.callee( +new Date() - remainder*1000 );
+        // }
  
         return amount;
     };
