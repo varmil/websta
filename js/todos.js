@@ -302,7 +302,6 @@ $(function(){
 
 	// ページ読み込み時のロード
     loadOne: function(todo) {
-	  // Check model's duration
       var view = new TodoView({model: todo});
       this.$("#todo-list").prepend(view.render().el);
     },
