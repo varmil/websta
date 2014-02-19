@@ -8,7 +8,6 @@ $(function(){
 
   // Todo Model
   // ----------
-
   // Our basic **Todo** model has `title`, `url`, and `done` attributes.
   var Todo = Backbone.Model.extend({
 	// Duration of a model (m seconds)
@@ -57,10 +56,8 @@ $(function(){
   // The collection of todos is backed by *localStorage* instead of a remote
   // server.
   var TodoList = Backbone.Collection.extend({
-
     // Reference to this collection's model.
     model: Todo,
-
     // Save all of the todo items under the `"todos-backbone"` namespace.
     localStorage: new Backbone.LocalStorage("todos-backbone"),
 
@@ -91,13 +88,10 @@ $(function(){
 
   // Todo Item View
   // --------------
-
   // The DOM element for a todo item...
   var TodoView = Backbone.View.extend({
-
     //... is a list tag.
     tagName:  "li",
-
     // Cache the template function for a single item.
     template: _.template($('#item-template').html()),
 
@@ -163,10 +157,12 @@ $(function(){
     },
 
     // Remove the item, destroy the model.
+	// メモリリークの一因。zombie View。_this = null;で解決
     clear: function() {
 	  var _this = this;
 	  this.$el.hide('slow', function(){
 		_this.model.destroy();
+		_this = null;
 	  });
     },
 
@@ -203,10 +199,10 @@ $(function(){
 			  } else if (phase =="end") {
 					// 一定以上スワイプしたので削除
 					_this.clear();
+					_this = null;
 			  }
 			},
 			threshold: threshold,
-			// maxTimeThreshold:2500,
 			excludedElements:"button, input, select, textarea, .noSwipe, a",
 			triggerOnTouchEnd:false,	// true:指を離すまで発火しない
 			allowPageScroll:"auto",
@@ -302,7 +298,6 @@ $(function(){
 
 	// ページ読み込み時のロード
     loadOne: function(todo) {
-	  // Check model's duration
       var view = new TodoView({model: todo});
       this.$("#todo-list").prepend(view.render().el);
     },
@@ -314,7 +309,6 @@ $(function(){
 		archive: false,
 	  }
 	  var res = Todos.where(attributes);
-	  console.debug('res = ', res);
 	  for(var i=0; i<res.length; i++) {
 		this.flg = res[i].shouldBeSkipped();
 		if (this.flg) continue;
@@ -378,7 +372,6 @@ $(function(){
 			console.debug('scrolled to bottom');
 			// this.loadArchives();
 		}
-		
     },
 
 	// modelのurlを元にタイトルを取得する。
@@ -400,11 +393,12 @@ $(function(){
 			url: model.get('url'),
 			type: 'GET',
 			success: function(res) {
+			console.log($(res.responseText).find("meta[name=description]"));
 				// スクレイピングしたcontentsから特定のタグの内容を切り出す。
 				var str = $(res.responseText).find('h1, h2, h3, p').text();
 				// 文字列の切り出し
-				result_str = str.substring(0, str_length);
-				model.save({comment: result_str});
+				str = str.substring(0, str_length);
+				model.save({comment: str});
 			}
 		});
 	},
