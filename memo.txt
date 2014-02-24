@@ -1,11 +1,11 @@
-■保存する内容
-key					value(型)							meaning  
-title					string								サイトのタイトル  
-URL					string								サイトURL  
+■保存する内容  
+key			value(型)						meaning  
+title			string							サイトのタイトル  
+URL			string							サイトURL  
 created_at		timestamp						登録日時  
 deleted_at		timestamp						削除予定日時  
-state				int									とりあえず、ちょっと気になる、長期保存  
-comment			string								コメント  
+state			int							とりあえず、ちょっと気になる、長期保存  
+comment			string							コメント  
 
 
 ■favicon画像の取得はGoogle APIで（参考）  
@@ -33,8 +33,3 @@ Doneのもの：アーカイブに移動
 			ex) perPage = 50, collection.length = 120, -> page: 3  
 			http://mixmaru.com/?p=274  
 NotDoneのもの：完全削除  
-
-■メモリリーク調査
-・ajax通信の結果が貯まっていく？
-・_thisはゾンビViewの原因になる。
-・
