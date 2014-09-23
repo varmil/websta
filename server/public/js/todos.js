@@ -111,8 +111,6 @@ $(function(){
       "blur .edit"					: "close",
       "mouseenter img.thumbnail"	: "startZoom",
       "mouseleave img.thumbnail"	: "endZoom",
-      // "mouseenter"	: "changeBgColor",
-      // "mouseleave"	: "returnBgColor",
     },
 
     // The TodoView listens for changes to its model, re-rendering. Since there's
@@ -411,5 +409,4 @@ $(function(){
 
   // Finally, we kick things off by creating the **App**.
   var App = new AppView;
-
 });
