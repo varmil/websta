@@ -30,7 +30,7 @@ $(function(){
 
     // Toggle the `done` state of this todo item.
     toggle: function() {
-      this.save({done: !this.get("done")});
+      this.save({id: this.id, done: !this.get("done")});
     },
 
 	// 削除日時を過ぎていたら削除。既読ならばArchivesへ。renderする際にskipするか
@@ -41,7 +41,7 @@ $(function(){
 		if (date > delete_at) {
 			if (this.get('done'))
 			{
-				this.save({archive: true, delete_at: -1, done: false});
+				this.save({id: this.id, archive: true, delete_at: -1, done: false});
 				return true;
 			}
 			this.destroy();
@@ -62,7 +62,8 @@ $(function(){
     model: Todo,
 
     // Save all of the todo items under the `"todos-backbone"` namespace.
-    localStorage: new Backbone.LocalStorage("todos-backbone"),
+    // localStorage: new Backbone.LocalStorage("todos-backbone"),
+	url: "/bookmarks",
 
     // Filter down the list of all todo items that are finished.
     done: function(archive_flg) {
@@ -149,7 +150,7 @@ $(function(){
       if (!value) {
         this.clear();
       } else {
-        this.model.save({title: value});
+        this.model.save({id: this.model.id, title: value});
         this.$el.removeClass("editing");
       }
     },
@@ -165,6 +166,7 @@ $(function(){
 	  var _this = this;
 	  this.$el.hide('slow', function(){
 		_this.model.destroy();
+		// TODO HTTP DELETE method to express.
 	  });
     },
 
@@ -306,7 +308,7 @@ $(function(){
 
     // Add all items in the **Todos** collection at once.
     loadWebs: function() {
-	  console.log('[AppView] loadWebs');
+	  console.log('[AppView] loadWebs', Todos);
 	  var attributes = {
 		archive: false,
 	  }
@@ -386,7 +388,8 @@ $(function(){
 			url: model.get('url'),
 		},
 		function(res){
-			model.save({title: res.title});
+			model.url = '/bookmarks/title/' + model.get('_id');
+			model.save({id: model.get('_id'), title: res.title});
 		});
 	},
 
@@ -401,7 +404,8 @@ $(function(){
 				var str = $(res.responseText).find('h1, h2, h3, p').text();
 				// 文字列の切り出し
 				result_str = str.substring(0, str_length);
-				model.save({comment: result_str});
+				model.url = '/bookmarks/comment/' + model.get('_id');
+				model.save({id: model.get('_id'), comment: result_str});
 			}
 		});
 	},

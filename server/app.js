@@ -8,6 +8,7 @@ var routes_index = require('./routes/index');
 var numCPUs = require('os').cpus().length;
 var morgan = require('morgan')
 // var logger = require('./logger');
+var bodyParser = require('body-parser')
 
 if (cluster.isMaster) {
     for (var i = 0; i < numCPUs; i++) {
@@ -18,8 +19,8 @@ if (cluster.isMaster) {
 	var router = express.Router();
 
 	// create a write stream (in append mode)
-	var accessLogStream = fs.createWriteStream(__dirname + '/access.log');
-	app.use(morgan('dev', { stream: accessLogStream, immidiate: true }));
+	// var accessLogStream = fs.createWriteStream(__dirname + '/access.log');
+	app.use(morgan('dev', { /*stream: accessLogStream,*/ immidiate: true }));
 
 	// these are cannot use by default in express 4.x
 	// app.use(express.errorHandler());
@@ -35,10 +36,17 @@ if (cluster.isMaster) {
 	app.set('views', __dirname + '/views');
 	app.use(express['static'](path.join(__dirname, '/public')));
 
+	// parse post data (req.body.FOO)
+	app.use( bodyParser.json() );       // to support JSON-encoded bodies
+	app.use(bodyParser.urlencoded({extended: true})); // to support URL-encoded bodies
+
 	// main routes
 	router.get('/', routes_index.index);
-	router.get('/bookmark', routes_index.get_bookmark);
-	router.post('/bookmark', routes_index.post_bookmark);
+	router.get('/bookmarks', routes_index.get_bookmark);
+	router.post('/bookmarks', routes_index.post_bookmark);
+	router.put('/bookmarks/:type/:bookmarkid', routes_index.put_bookmark);
+	router.put('/bookmarks/:type', routes_index.put_bookmark);
+	router.put('/bookmarks/:type', routes_index.put_bookmark);
 	// router.get('/artist/:artistid', routes_index.artist);
 	// router.get('/ticket/:ticketid', routes_index.ticket);
 	// router.post('/buy', routes_index.buy);
