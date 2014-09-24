@@ -4,11 +4,9 @@ var http    = require('http');
 var path    = require('path');
 var cluster = require('cluster');
 var routes_index = require('./routes/index');
-// var routes_admin = require('./routes/admin');
 var numCPUs = require('os').cpus().length;
-var morgan = require('morgan')
-// var logger = require('./logger');
-var bodyParser = require('body-parser')
+var morgan = require('morgan');
+var bodyParser = require('body-parser');
 
 if (cluster.isMaster) {
     for (var i = 0; i < numCPUs; i++) {
@@ -44,16 +42,8 @@ if (cluster.isMaster) {
 	router.get('/', routes_index.index);
 	router.get('/bookmarks', routes_index.get_bookmark);
 	router.post('/bookmarks', routes_index.post_bookmark);
-	router.put('/bookmarks/:type/:bookmarkid', routes_index.put_bookmark);
-	router.put('/bookmarks/:type', routes_index.put_bookmark);
-	router.put('/bookmarks/:type', routes_index.put_bookmark);
-	// router.get('/artist/:artistid', routes_index.artist);
-	// router.get('/ticket/:ticketid', routes_index.ticket);
-	// router.post('/buy', routes_index.buy);
-	// admin routes
-	// router.get('/admin', routes_admin.get_index);
-	// router.post('/admin', routes_admin.post_index);
-	// router.get('/admin/order.csv', routes_admin.order_csv);
+	router.put('/bookmarks/:bookmarkid', routes_index.put_bookmark);
+	router.delete('/bookmarks/:bookmarkid', routes_index.delete_bookmark);
 
 	// apply the routes to our application
 	app.use('/', router);

@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 mongoose.connect('mongodb://127.0.0.1/bookmark');
 
 var Schema = mongoose.Schema
-	, ObjectId = Schema.ObjectId;;
+	, ObjectId = Schema.ObjectId;
 
 var Bookmark = new Schema({
 	url:  { type: String, default: 'hahaha' }
@@ -13,12 +13,12 @@ var Bookmark = new Schema({
 	, archive:  { type: Boolean, default: false }
 	, comment:  { type: String}
 });
- 
+
 // a setter
 // Bookmark.path('title').set(function (v) {
   // return v.capitalize();
 // });
- 
+
 // middleware
 Bookmark.pre('save', function (next) {
 	next();
@@ -30,7 +30,7 @@ Bookmark.pre('save', function (next) {
 Bookmark.methods = {
 	findAll: function(cb) {
 		console.log('Getting all');
-	
+
 		this.model('Bookmark').find({}, function(err, results) {
 			if (err) throw err;
 			// 非同期なのでcallbackを使う
