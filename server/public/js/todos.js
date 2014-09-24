@@ -294,28 +294,27 @@ $(function(){
 		addOne: function(todo) {
 			var self = this;
 			// titleとcomment両方が取れるまでPUTを待つ
-			var d = new $.Deferred().resolve();
 			var title, comment;
 
-			d = d.then(function() {
+			var titleDeferred = (function() {
 				var dInner = new $.Deferred();
 				self.trigger('getTitle', todo, function(res) {
 					title = res;
 					dInner.resolve();
 				});
 				return dInner;
-			});
+			})();
 
-			d = d.then(function() {
+			var commentDeferred = (function() {
 				var dInner = new $.Deferred();
 				self.trigger('getComment', todo, function(res) {
 					comment = res;
 					dInner.resolve();
 				});
 				return dInner;
-			});
+			})();
 
-			d.done(function() {
+			$.when(titleDeferred, commentDeferred).done(function() {
 				// PUT要求を送る（タイトルとコメント両方がとれたタイミングで）
 				todo.save({ id: todo.get('id'), title: title, comment: comment });
 			});
