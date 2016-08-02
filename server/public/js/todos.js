@@ -11,8 +11,8 @@ $(function(){
 
 	// Our basic **Todo** model has `title`, `url`, and `done` attributes.
 	var Todo = Backbone.Model.extend({
-	// Duration of a model (m seconds)
-	duration: 60*60*24*1000,
+		// Duration of a model (m seconds)
+		duration: 60*60*24*1000,
 
 		// Default attributes for the todo item.
 		defaults: function() {
